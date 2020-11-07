@@ -90,6 +90,25 @@ router.post('/forgot_password', async (req, res) =>{
 
 router.post('/reset_password', async (req, res) =>{
     const { email, token, password } = req.body
+
+    try {
+        const user = await User.findOne({ email })
+            .select('+passwordResetToken passwordResetExpires')
+        
+        if(!user)
+            return res.status(400).send({error: 'usuario nao encontrado'})   
+            
+        if(token !== user.passwordResetToken)    
+            return res.status(400).send({error: 'Token Invalido'})
+
+        if(now > user.passwordResetExpires)
+            return res.status(400).send({error: 'Token expirado, gere um token novo'})
+            
+        user.password = password;    
+        
+    } catch (err) {
+        res.status(400).send({error: 'Nao foi psosivel resetar sua senha'})
+    }
 })
 
 module.exports = app => app.use('/auth', router);
